@@ -2,11 +2,14 @@ package com.example.gym1.Service;
 
 import com.example.gym1.Converter.NotifyAdminToNotifyAdminDto;
 import com.example.gym1.Dto.NotificationDto;
+import com.example.gym1.Exceptions.NotFoundException;
+import com.example.gym1.Model.GymPlan;
 import com.example.gym1.Model.MemberShip;
 import com.example.gym1.Model.NotifyAdmin;
 import com.example.gym1.Model.User;
 import com.example.gym1.Repo.MemberShipRepo;
 import com.example.gym1.Repo.NotifyRepo;
+import com.example.gym1.Repo.PlanRepo;
 import com.example.gym1.Repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,7 +17,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -29,32 +34,37 @@ public class MemberShipService {
     @Autowired
     NotifyRepo notifyRepo;
     @Autowired
+    PlanRepo planRepo;
+    @Autowired
     NotifyAdminToNotifyAdminDto notifyAdminToNotifyAdminDto;
 
     //when user register a membership
-    public ResponseEntity<?> createMemberShip(MemberShip memberShip) {
+        public ResponseEntity<?> createMemberShip(MemberShip memberShip) {
+        String event="New memberShip";
         User user = userRepo.findById(memberShip.getUser().getId()).get();
+        GymPlan gymPlan=planRepo.findById(memberShip.getGymPlan().getId()).get();
         MemberShip memberShip1 = new MemberShip();
-
-        memberShip1.setDuration_months(memberShip.getDuration_months());
-        memberShip1.setStart_date(memberShip.getStart_date());
+        memberShip1.setId(memberShip.getId());
         memberShip1.setEnd_date(memberShip.getEnd_date());
-        memberShip1.setPrice(memberShip.getPrice());
+        memberShip1.setStart_date(memberShip.getStart_date());
         memberShip1.setMemberShipType(memberShip.getMemberShipType());
         memberShip1.setUser(user);
+        memberShip1.setGymPlan(gymPlan);
         memberShipRepo.save(memberShip1);
+        createNotification1(memberShip1,event);
         return new ResponseEntity<>("Register Success!", HttpStatus.OK);
     }
 
     //Update MemberShip
     public ResponseEntity<?> updateMemberShipType(Long id, MemberShip memberShip) {
-        String event = "updated";
+            String event = "updated";
+
+
         if (memberShipRepo.existsById(id)) {
             MemberShip memberShip1 = memberShipRepo.findById(id).get();
             memberShip1.setMemberShipType(memberShip.getMemberShipType());
-            memberShip1.setDuration_months(memberShip.getDuration_months());
             memberShip1.setStart_date(memberShip.getStart_date());
-            memberShip1.setEnd_date(memberShip.getEnd_date());
+          memberShip1.setEnd_date(memberShip.getEnd_date());
             notifyAdmin(memberShip, id, event);
             memberShipRepo.save(memberShip1);
 
@@ -65,21 +75,6 @@ public class MemberShipService {
 
     }
 
-    //create Notification
-    private NotifyAdmin notifyAdmin(MemberShip memberShip, Long id, String event) {
-        NotifyAdmin notifyAdmin1 = new NotifyAdmin();
-        notifyAdmin1.setEvent(event);
-        notifyAdmin1.setLt(LocalDateTime.now());
-        notifyAdmin1.setDuration_months(memberShip.getDuration_months());
-        notifyAdmin1.setMemberShipType(memberShip.getMemberShipType());
-        notifyAdmin1.setEnd_date(memberShip.getEnd_date());
-        notifyAdmin1.setStart_date(memberShip.getStart_date());
-        MemberShip memberShip1 = memberShipRepo.findById(id).get();
-        notifyAdmin1.setMemberShip(memberShip1);
-        notifyRepo.save(notifyAdmin1);
-        return notifyAdmin1;
-
-    }
 
     //Admin get All notification about user requesting to change membership
     public List<NotificationDto> getAllNotification() {
@@ -98,16 +93,62 @@ public class MemberShipService {
     }
 
     //delete membership notify admin when a user deleteMembership
-    public ResponseEntity<?> deleteMemberShipByid(Long id) {
-        String event = "Deleted MemberShip!";
-        if (memberShipRepo.existsById(id)) {
-            MemberShip memberShip = memberShipRepo.findById(id).get();
-            notifyAdmin(memberShip,id,event);
-            memberShipRepo.delete(memberShip);
+        public ResponseEntity<?> deleteMemberShipByid(Long id) {
 
-            return new ResponseEntity<>("MemberShip deleted!", HttpStatus.OK);
-        } else {
-            return new ResponseEntity<>("Dont have any memberShip to delete!", HttpStatus.BAD_REQUEST);
+        MemberShip memberShip = memberShipRepo.findById(id).orElseThrow(()->new NotFoundException("MemberShip with this id:"+ id + "does not found!"));
+
+        String event = "Deleted MemberShip!";
+
+        memberShipRepo.delete(memberShip);
+
+        createNotificationForDelete(id,memberShip,event);
+
+        return new ResponseEntity<>("MemberShip deleted Success!", HttpStatus.BAD_REQUEST);
         }
+
+    //create Notification for update
+    private NotifyAdmin notifyAdmin(MemberShip memberShip, Long id, String event) {
+        NotifyAdmin notifyAdmin1 = new NotifyAdmin();
+        notifyAdmin1.setEvent(event);
+        notifyAdmin1.setLt(LocalDateTime.now());
+        notifyAdmin1.setMemberShipType(memberShip.getMemberShipType());
+        notifyAdmin1.setEnd_date(memberShip.getEnd_date());
+        notifyAdmin1.setStart_date(memberShip.getStart_date());
+        MemberShip memberShip1 = memberShipRepo.findById(id).get();
+        notifyAdmin1.setMemberShip(memberShip1);
+        notifyRepo.save(notifyAdmin1);
+        return notifyAdmin1;
+
+    }
+    //admin will be notified for new membership
+    public NotifyAdmin createNotification1(MemberShip memberShip,String event){
+        NotifyAdmin notifyAdmin=new NotifyAdmin();
+        MemberShip memberShip1 = memberShipRepo.findById(memberShip.getId()).get();
+        //notifyAdmin.setId(memberShip.getId());
+        notifyAdmin.setMemberShipType(memberShip.getMemberShipType());
+        notifyAdmin.setEvent(event);
+        notifyAdmin.setLt(LocalDateTime.now());
+        notifyAdmin.setMemberShipType(memberShip.getMemberShipType());
+        notifyAdmin.setEnd_date(memberShip.getEnd_date());
+        notifyAdmin.setStart_date(memberShip.getStart_date());
+        notifyAdmin.setMemberShip(memberShip1);
+        notifyRepo.save(notifyAdmin);
+        return notifyAdmin;
+    }
+
+    //create Notification when user delete Member ship
+    //TODO MEMBERSHIP ID NULL
+        public NotifyAdmin createNotificationForDelete(Long id,MemberShip memberShip,String event){
+        NotifyAdmin deleteMemberShip=new NotifyAdmin();
+        MemberShip memberShip1 = memberShipRepo.findById(memberShip.getId()).get();
+        deleteMemberShip.setMemberShip(memberShip1);
+        deleteMemberShip.setEvent(event);
+        deleteMemberShip.setMemberShipType(memberShip.getMemberShipType());
+        deleteMemberShip.setDuration_months(deleteMemberShip.getDuration_months());
+        deleteMemberShip.setStart_date(memberShip.getStart_date());
+        deleteMemberShip.setEnd_date(memberShip.getEnd_date());
+        deleteMemberShip.setLt(LocalDateTime.now());
+        notifyRepo.save(deleteMemberShip);
+        return deleteMemberShip;
     }
 }

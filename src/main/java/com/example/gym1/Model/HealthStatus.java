@@ -1,27 +1,28 @@
 package com.example.gym1.Model;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.time.LocalDate;
 
-@Setter
 @Getter
-@Entity
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Payments {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    public Long id;
-    private double amount;
-    private LocalDate dateOfPayment;
+@Entity
+public class HealthStatus {
 
+    @Id
+    @GeneratedValue
+    private  Long id;
+    private double height;
+    private double weight;
+    private double body_fat_percentage;
+    private String remarks;
+ //   double BMI = weight / (height * height);
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "user_id",referencedColumnName = "id")
     private User user;
-
-
-}
+    }

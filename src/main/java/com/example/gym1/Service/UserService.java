@@ -1,25 +1,28 @@
 package com.example.gym1.Service;
 
+import com.example.gym1.Converter.RateDtoToRate;
+import com.example.gym1.Converter.RateToRateDto;
+import com.example.gym1.Converter.UserDtoToUser;
 import com.example.gym1.Converter.UserToUserDto;
 import com.example.gym1.Dto.PasswordDto;
+import com.example.gym1.Dto.RateDto;
 import com.example.gym1.Dto.UserDto;
 import com.example.gym1.Dto.UserRegistrationDto;
-import com.example.gym1.Model.Gender;
-import com.example.gym1.Model.Role;
-import com.example.gym1.Model.User;
+import com.example.gym1.Model.*;
+import com.example.gym1.Repo.RateRepo;
 import com.example.gym1.Repo.RoleRepo;
 import com.example.gym1.Repo.UserRepo;
+import com.example.gym1.Utils.GenderUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.crossstore.ChangeSetPersister;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -33,11 +36,21 @@ public class UserService {
     BCryptPasswordEncoder bCryptPasswordEncoder;
     @Autowired
     PasswordEncoder passwordEncoder;
+    private final UserDtoToUser toUser;
+    private final RateToRateDto rateToRateDto;
+    private final RateDtoToRate toRate;
+
+    @Autowired
+    RateRepo rateRepo;
     private final UserToUserDto userToUserDto;
 
-    public UserService(UserToUserDto userToUserDto) {
+    public UserService(UserDtoToUser toUser, RateToRateDto rateToRateDto, RateDtoToRate toRate, UserToUserDto userToUserDto) {
+        this.toUser = toUser;
+        this.rateToRateDto = rateToRateDto;
+        this.toRate = toRate;
         this.userToUserDto = userToUserDto;
     }
+
 
     public ResponseEntity<?> save(UserRegistrationDto userRegistrationDto) {
         String event = "New User is created!";
@@ -54,14 +67,22 @@ public class UserService {
             userToAdd.setAge(userRegistrationDto.getAge());
             userToAdd.setAddress(userRegistrationDto.getAddress());
             userToAdd.setPasswordToken(generateToken());
-            userToAdd.setGender(Gender.Female);
+            userToAdd.setGender(GenderUtils.getGender(userRegistrationDto.getGender()));
             addUserRole(userToAdd);
-
             userRepo.save(userToAdd);
             return new ResponseEntity<>(userToAdd.getPasswordToken(), HttpStatus.OK);
         }
-
     }
+
+   public ResponseEntity<?> saveUser(UserDto userDto){
+        User userToSave=toUser.convert(userDto);
+String encodedPassword=bCryptPasswordEncoder.encode(userDto.getPassword());
+userToSave.setPassword(encodedPassword);
+userToSave.setPasswordToken(generateToken());
+       userRepo.save(userToSave);
+       return new ResponseEntity<>(userToSave.getPasswordToken(),HttpStatus.OK);
+    }
+
 
     //add password by token
     public String addPasswordByToken(String token, PasswordDto passwordDto) {
@@ -70,8 +91,7 @@ public class UserService {
         String encodedPassword = bCryptPasswordEncoder.encode(passwordDto.getPassword());
         user.setPassword(encodedPassword);
         userRepo.save(user);
-        return "Password added correct!;";
-
+        return "Password added correct!";
     }
 
     //updatePassword
@@ -81,10 +101,8 @@ public class UserService {
         String encodedPassword = bCryptPasswordEncoder.encode(passwordDto.getPassword());
         userToUpdate.setPassword(encodedPassword);
         userRepo.save(userToUpdate);
-        return "Passwordi u ndryshua me sukses!";
+        return "Password updated success!";
     }
-
-
     public void addUserRole(User user) {
         Role userRole = roleRepo.findByName("user");
         user.addRole(userRole);
@@ -95,25 +113,26 @@ public class UserService {
         user.addRole(adminRole);
     }
 
-
     private String generateToken() {
         StringBuilder token = new StringBuilder();
         return token.append(UUID.randomUUID().toString())
                 .append(UUID.randomUUID().toString()).toString();
-
-
     }
 
     //update user data by id
-    public ResponseEntity<?> updateUser(UserDto userDto, Long id) {
-        User userToUpdate = userRepo.findById(id).orElseThrow(() -> new UsernameNotFoundException("This use does not found!"));
-        userToUpdate.setUserName(userDto.getUserName());
-        userToUpdate.setLastName(userToUpdate.getLastName());
-        userToUpdate.setEmail(userDto.getEmail());
-        userToUpdate.setPhoneNumber(userToUpdate.getPhoneNumber());
-        userRepo.save(userToUpdate);
-        return new ResponseEntity<>("Data updated success!", HttpStatus.OK);
+           public ResponseEntity<?> updateUser(Long id,UserDto userDto) {
+        try {
+            User userToUpdate = userRepo.findById(id).get();
+            userToUpdate.setUserName(userDto.getUserName());
+            userToUpdate.setLastName(userToUpdate.getLastName());
+            userToUpdate.setEmail(userDto.getEmail());
+            userToUpdate.setPhoneNumber(userToUpdate.getPhoneNumber());
+            userRepo.save(userToUpdate);
+            return new ResponseEntity<>("Data updated success!", HttpStatus.OK);
 
+        } catch (NoSuchElementException elementException) {
+            return new ResponseEntity<>("This user does not exist!", HttpStatus.BAD_REQUEST);
+        }
     }
 
     //find User by id
@@ -129,7 +148,7 @@ public class UserService {
             throw new NumberFormatException("Not found!");
         }
 
-        return userToUserDto.convert(userRepo.findById(parseId).orElseThrow(()->new NoSuchElementException("Not Found")));
+        return userToUserDto.convert(userRepo.findById(parseId).orElseThrow(()->new NoSuchElementException("Not Found!")));
 
     }
     public List<UserDto>findAll(){
@@ -137,7 +156,7 @@ public class UserService {
     }
 
 
-    public ResponseEntity<?>deleteById(String id){
+public ResponseEntity<?>deleteById(String id){
 long parseId;
 try {
     parseId=Long.parseLong(id);
@@ -148,8 +167,40 @@ try {
 }
 userRepo.deleteById(parseId);
 
+ return new ResponseEntity<>("User deleted!",HttpStatus.OK);
+    }
+    //user add rate for the gym
+    public String addRate(Rate rate){
+        User userToAddRate=userRepo.findById(rate.getUser().getId()).get();
+        Rate rate1=new Rate();
+        rate1.setUser(userToAddRate);
+        rate1.setComment(rate.getComment());
+        rate1.setRate(rate.getRate());
+        rateRepo.save(rate1);
+        return "Rate added success!";
 
-        return new ResponseEntity<>("User deleted!",HttpStatus.OK);
+    }//get Rate By user id
+public void  addRate(RateDto rateDto){
+        Rate rateToAdd=toRate.convert(rateDto);
+        rateRepo.save(rateToAdd);
+}
+    public Optional<Rate> getRateById(String id){
+        long parseId;
+        try {
+            parseId = Long.parseLong(id);
+        }
+                catch(NumberFormatException exception){
+            throw new NumberFormatException("This id can't be parsed!");
+            }
+        return rateRepo.findById(parseId);
+        }
+public  List<RateDto>findAllRates(){
+        return rateRepo.findAll().stream().map(rate -> rateToRateDto.convert(rate)).collect(Collectors.toList());
+}
+public Object saveRate(RateDto rateDto){
+        Rate rateToSave=toRate.convert(rateDto);
+        return rateRepo.save(rateToSave);
+}
     }
 
-}
+

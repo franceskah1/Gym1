@@ -22,7 +22,7 @@ public class NotifyAdminToNotifyAdminDto implements Converter<NotifyAdmin, Notif
             notificationDto.setEnd_date(source.getEnd_date());
             notificationDto.setMemberShipType(source.getMemberShipType());
             notificationDto.setLocalDateTime(LocalDateTime.now());
-notificationDto.setUserName(source.getMemberShip().getUser().getUsername());
+            notificationDto.setUserName(source.getMemberShip().getUser().getUsername());
 
             return notificationDto;
         }

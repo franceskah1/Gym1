@@ -19,10 +19,9 @@ import java.time.LocalDateTime;
 public class NotifyAdmin {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
-private Long id;
+    @Column(name = "id", nullable = false,unique = true)
+    private Long id;
     private int duration_months;
-
     private String memberShipType;
     private LocalDateTime start_date;
     private LocalDateTime end_date;
@@ -32,11 +31,11 @@ private Long id;
 
 
 
-    @ManyToOne
-    @JoinColumn(name = "memberShip_id",nullable = true)
-    private MemberShip memberShip;
 
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
 
+    public  MemberShip memberShip;
 
 
 

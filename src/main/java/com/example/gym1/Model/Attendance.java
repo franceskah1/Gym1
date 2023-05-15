@@ -21,12 +21,13 @@ public class Attendance {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private LocalDateTime check_in;
+
     private LocalDateTime check_out;
 
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     @ManyToOne(fetch = FetchType.LAZY,optional = false)
-    @JoinColumn(name="memberShip_id",referencedColumnName = "id")
-    private MemberShip memberShip;
+    @JoinColumn(name="user_id",referencedColumnName = "id")
+    private User user;
 
 
     @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})

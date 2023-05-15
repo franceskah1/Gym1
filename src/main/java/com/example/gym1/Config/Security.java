@@ -14,24 +14,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-//import com.example.gym1.Controller.Service.CustomerUserService;
-//import org.springframework.context.annotation.Bean;
-//import org.springframework.context.annotation.Configuration;
-//import org.springframework.security.authentication.AuthenticationManager;
-//import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-//import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
-//import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-//import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-//import org.springframework.security.config.http.SessionCreationPolicy;
-//import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-//import org.springframework.web.cors.CorsConfiguration;
-//import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-//import org.springframework.web.filter.CorsFilter;
-//
 @Configuration
 @EnableWebSecurity
-//@EnableGlobalMethodSecurity(prePostEnabled = true, proxyTargetClass = true)
-//
 public class Security extends WebSecurityConfigurerAdapter {
 
    private final CustomerUserService customUserDetailsService;
@@ -61,7 +45,7 @@ public class Security extends WebSecurityConfigurerAdapter {
                 .antMatchers("/admin/page/**").permitAll()
                 .antMatchers("/app/user/registration/**").permitAll()
                 .antMatchers("/app/user/**").permitAll()
-                .antMatchers("/productApp/admin/**").permitAll()
+                .antMatchers("/gymApp/admin/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);

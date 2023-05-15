@@ -13,6 +13,6 @@ public class NotificationDto{
     private String event;
     LocalDateTime localDateTime ;
     private int duration_months;
-
+    private String gender;
     private String memberShipType;
 }

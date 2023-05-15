@@ -4,6 +4,7 @@ import com.example.gym1.Config.JwtUtils;
 import com.example.gym1.Dto.APIResponse;
 import com.example.gym1.Dto.LogIn;
 import com.example.gym1.Repo.RoleRepo;
+import com.example.gym1.Repo.StaffRepo;
 import com.example.gym1.Repo.UserRepo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,8 @@ public class LogInService {
     private UserRepo userRepo;
     @Autowired
     CustomerUserService customerUserService;
-
+@Autowired
+    StaffRepo staffRepo;
     @Autowired
     RoleRepo roleRepo;
     @Autowired
@@ -33,9 +35,9 @@ public class LogInService {
     AuthenticationManager authenticationManager;
 
 
-    public Object login(LogIn logIn){
-        APIResponse apiResponse=new APIResponse();
-        try{
+    public Object login(LogIn logIn) {
+        APIResponse apiResponse = new APIResponse();
+        try {
             Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
                     logIn.getEmail(), logIn.getPassword()));
             SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -44,17 +46,14 @@ public class LogInService {
             apiResponse.setUserData(userRepo.findUserByEmail(logIn.getEmail()).get());
 
 
-
             return new ResponseEntity<>(apiResponse, HttpStatus.OK);
-        }catch (BadCredentialsException badCredentialsException){
+        } catch (BadCredentialsException badCredentialsException) {
 
 
-
-
-            return new ResponseEntity<>("bad credencials",HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Bad credencials", HttpStatus.BAD_REQUEST);
         }
-
     }
+
 }
 
 

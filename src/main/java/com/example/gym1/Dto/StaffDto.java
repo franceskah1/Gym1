@@ -1,7 +1,6 @@
 package com.example.gym1.Dto;
 
 import com.example.gym1.Model.Gender;
-import com.example.gym1.Model.Role;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,22 +9,24 @@ import org.springframework.stereotype.Component;
 
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
-import java.util.Set;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Component
-public class UserRegistrationDto {
-    private Long id;
-    private String userName;
-    private String lastName;
-    private int age;
-    private String address;
-    private String phoneNumber;
 
-    private String gender;
+public class StaffDto {
+    private Long id;
+    private  String firstName;
+    private String lastName;
     private String email;
-    private Set<Role> roles;
+    private String phoneNumber;
+    private String address;
+    private LocalDate hiredDate;
+    private String gender;
+    private double  Salary;
+    private  String job_title;
 }

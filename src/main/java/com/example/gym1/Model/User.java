@@ -30,6 +30,7 @@ public class User implements UserDetails, Serializable {
     private String phoneNumber;
     @Enumerated(EnumType.STRING)
     private Gender gender;
+
     private String email;
     private String password;
     private String passwordToken;

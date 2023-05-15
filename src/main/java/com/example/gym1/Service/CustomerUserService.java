@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 @Service
 public class CustomerUserService implements UserDetailsService {
     private final UserRepo userRepo;
+
     BCryptPasswordEncoder bCryptPasswordEncoder;
     private final RoleRepo roleRepo;
     public CustomerUserService(UserRepo userRepo, RoleRepo roleRepo) {
